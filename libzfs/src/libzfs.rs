@@ -7,7 +7,7 @@ extern crate libzfs_sys as sys;
 use libzfs_types::{LibZfsError, Result};
 use nvpair;
 use nvpair::ForeignType;
-use std::ffi::CString;
+use std::ffi::{CStr, CString};
 use std::io::Error;
 use std::os::raw::{c_int, c_void};
 use std::ptr;
@@ -75,32 +75,50 @@ impl Libzfs {
             nvpair::NvList::from_ptr(x)
         }
     }
-    pub fn import_all(&mut self, nvl: &nvpair::NvList) -> Vec<Result<()>> {
-        nvl.iter()
-            .map(|x| {
-                let nvl2 = x.value_nv_list()?;
-
-                let code = unsafe {
-                    sys::zpool_import(
-                        self.raw,
-                        nvl2.as_ptr() as *mut _,
-                        ptr::null(),
-                        ptr::null_mut(),
-                    )
-                };
-
-                match code {
-                    0 => Ok(()),
-                    x => Err(LibZfsError::Io(Error::from_raw_os_error(x))),
+    pub fn import_all<'a>(&mut self, nvl: &'a nvpair::NvList) -> std::result::Result<(), Vec<(&'a CStr, LibZfsError)>> {
+        let mut errors = vec![];
+        for pair in nvl.iter() {
+            let name = pair.name();
+            let nvl2 = match pair.value_nv_list() {
+                Ok(nvl2) => nvl2,
+                Err(e) => {
+                    errors.push((name, e.into()));
+                    continue;
                 }
-            })
-            .collect()
+            };
+
+            let code = unsafe {
+                sys::zpool_import(
+                    self.raw,
+                    nvl2.as_ptr() as *mut _,
+                    ptr::null(),
+                    ptr::null_mut(),
+                )
+            };
+
+            if code != 0 {
+                errors.push((name, LibZfsError::Io(Error::from_raw_os_error(code))));
+            }
+        }
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(errors)
+        }
     }
-    pub fn export_all(&mut self, pools: &[Zpool]) -> Vec<Result<()>> {
-        pools
-            .iter()
-            .map(|x| x.disable_datasets().and_then(|_| x.export()))
-            .collect()
+    pub fn export_all<'a>(&mut self, pools: &'a [Zpool]) -> std::result::Result<(), Vec<(&'a Zpool, LibZfsError)>> {
+        let mut errors = vec![];
+        for pool in pools {
+            if let Err(e) = pool.disable_datasets().and_then(|_| pool.export()) {
+                errors.push((pool, e));
+            }
+        }
+
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(errors)
+        }
     }
     pub fn get_imported_pools(&mut self) -> Result<Vec<Zpool>> {
         unsafe extern "C" fn callback(
