@@ -75,7 +75,7 @@ impl Libzfs {
             nvpair::NvList::from_ptr(x)
         }
     }
-    pub fn import_all(&mut self, nvl: &nvpair::NvList) -> Result<Vec<()>> {
+    pub fn import_all(&mut self, nvl: &nvpair::NvList) -> Vec<Result<()>> {
         nvl.iter()
             .map(|x| {
                 let nvl2 = x.value_nv_list()?;
@@ -96,7 +96,7 @@ impl Libzfs {
             })
             .collect()
     }
-    pub fn export_all(&mut self, pools: &[Zpool]) -> Result<Vec<()>> {
+    pub fn export_all(&mut self, pools: &[Zpool]) -> Vec<Result<()>> {
         pools
             .iter()
             .map(|x| x.disable_datasets().and_then(|_| x.export()))
