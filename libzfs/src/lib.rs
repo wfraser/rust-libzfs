@@ -17,7 +17,7 @@ extern crate libzfs_sys as sys;
 
 pub extern crate libzfs_types;
 
-mod nvpair;
+pub mod nvpair;
 
 pub use libzfs_types::*;
 
