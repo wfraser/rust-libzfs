@@ -6,7 +6,7 @@ pub use foreign_types::{ForeignType, ForeignTypeRef, Opaque};
 use std::ffi;
 use std::io;
 use std::mem;
-use std::os::raw::{c_int, c_uint};
+use std::os::raw::c_int;
 use std::ptr;
 
 pub trait NvEncode {
@@ -230,9 +230,11 @@ impl NvListRef {
     pub fn lookup<S: CStrArgument>(&self, name: S) -> io::Result<&NvPair> {
         let name = name.into_cstr();
         let mut n = ptr::null_mut();
+
         let v = unsafe {
             nv_sys::nvlist_lookup_nvpair(self.as_ptr() as *mut _, name.as_ref().as_ptr(), &mut n)
         };
+
         if v != 0 {
             Err(io::Error::from_raw_os_error(v))
         } else {
@@ -248,6 +250,7 @@ impl NvListRef {
         let v = unsafe {
             nv_sys::nvlist_lookup_nvlist(self.as_ptr() as *mut _, name.as_ref().as_ptr(), &mut n)
         };
+
         if v != 0 {
             Err(io::Error::from_raw_os_error(v))
         } else {
@@ -259,11 +262,9 @@ impl NvListRef {
 
     pub fn lookup_string<S: CStrArgument>(&self, name: S) -> io::Result<ffi::CString> {
         let name = name.into_cstr();
-        let mut n;
+        let mut n = ptr::null_mut();
 
         let v = unsafe {
-            n = mem::uninitialized();
-
             nv_sys::nvlist_lookup_string(self.as_ptr() as *mut _, name.as_ref().as_ptr(), &mut n)
         };
 
@@ -277,13 +278,12 @@ impl NvListRef {
 
     pub fn lookup_uint64<S: CStrArgument>(&self, name: S) -> io::Result<u64> {
         let name = name.into_cstr();
-        let mut n: u64;
+        let mut n = 0;
 
         let v = unsafe {
-            n = mem::uninitialized();
-
             nv_sys::nvlist_lookup_uint64(self.as_ptr() as *mut _, name.as_ref().as_ptr(), &mut n)
         };
+
         if v != 0 {
             Err(io::Error::from_raw_os_error(v))
         } else {
@@ -293,13 +293,10 @@ impl NvListRef {
 
     pub fn lookup_nv_list_array<S: CStrArgument>(&self, name: S) -> io::Result<Vec<NvList>> {
         let name = name.into_cstr();
-
         let mut n = ptr::null_mut();
-
-        let mut len: c_uint;
+        let mut len = 0;
 
         let v = unsafe {
-            len = mem::uninitialized();
             nv_sys::nvlist_lookup_nvlist_array(
                 self.as_ptr() as *mut _,
                 name.as_ref().as_ptr(),
@@ -307,6 +304,7 @@ impl NvListRef {
                 &mut len,
             )
         };
+
         if v != 0 {
             Err(io::Error::from_raw_os_error(v))
         } else {
@@ -323,13 +321,10 @@ impl NvListRef {
 
     pub fn lookup_uint64_array<S: CStrArgument>(&self, name: S) -> io::Result<Vec<u64>> {
         let name = name.into_cstr();
-
         let mut n = ptr::null_mut();
-
-        let mut len: c_uint;
+        let mut len = 0;
 
         let v = unsafe {
-            len = mem::uninitialized();
             nv_sys::nvlist_lookup_uint64_array(
                 self.as_ptr() as *mut _,
                 name.as_ref().as_ptr(),

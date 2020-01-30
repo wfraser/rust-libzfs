@@ -57,7 +57,7 @@ impl Zfs {
             x => Err(LibZfsError::Io(Error::from_raw_os_error(x))),
         }
     }
-    pub fn props(&self) -> Result<(Vec<ZProp>)> {
+    pub fn props(&self) -> Result<Vec<ZProp>> {
         let buff_size = 319;
         let pl = self.prop_list()?;
 
@@ -102,7 +102,7 @@ impl Zfs {
                     }
                 }
             })
-            .collect::<Vec<_>>();
+            .collect();
 
         Ok(xs)
     }
