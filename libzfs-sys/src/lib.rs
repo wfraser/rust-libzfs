@@ -5,6 +5,7 @@
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
+#![allow(clippy::redundant_static_lifetimes)]
 #![crate_name = "libzfs_sys"]
 
 //! libzfs_sys — Rust bindings to libzfs2.
@@ -119,7 +120,7 @@ pub fn to_vdev_stat(mut xs: Vec<u64>) -> vdev_stat_t {
 /// Converts a `u32` to `Option<vdev_state_t>`
 pub fn to_vdev_state(n: u32) -> Option<vdev_state_t> {
     if n <= 7 {
-        Some(unsafe { std::mem::transmute(n) })
+        Some(n)
     } else {
         None
     }
@@ -128,7 +129,7 @@ pub fn to_vdev_state(n: u32) -> Option<vdev_state_t> {
 /// Converts an `i32` to `Option<zfs_prop_t>`
 pub fn to_zfs_prop_t(n: i32) -> Option<zfs_prop_t> {
     if n >= -1 && n <= 82 {
-        Some(unsafe { std::mem::transmute(n) })
+        Some(n)
     } else {
         None
     }
@@ -137,7 +138,7 @@ pub fn to_zfs_prop_t(n: i32) -> Option<zfs_prop_t> {
 /// Converts a `u32` to `Option<vdev_aux_t>`
 pub fn to_vdev_aux(n: u32) -> Option<vdev_aux_t> {
     if n <= 18 {
-        Some(unsafe { std::mem::transmute(n) })
+        Some(n)
     } else {
         None
     }

@@ -5,7 +5,6 @@ use self::cstr_argument::CStrArgument;
 pub use foreign_types::{ForeignType, ForeignTypeRef, Opaque};
 use std::ffi;
 use std::io;
-use std::mem;
 use std::os::raw::c_int;
 use std::ptr;
 
@@ -89,8 +88,8 @@ pub enum NvEncoding {
 impl NvEncoding {
     fn as_raw(&self) -> c_int {
         match self {
-            &NvEncoding::Native => nv_sys::NV_ENCODE_NATIVE,
-            &NvEncoding::Xdr => nv_sys::NV_ENCODE_XDR,
+            NvEncoding::Native => nv_sys::NV_ENCODE_NATIVE,
+            NvEncoding::Xdr => nv_sys::NV_ENCODE_XDR,
         }
     }
 }
@@ -148,20 +147,24 @@ impl Clone for NvList {
 }
 
 impl NvListRef {
+    /// # Safety
+    /// Does not check the pointer's validity, and returns a reference of any arbitrary lifetime.
     pub unsafe fn from_mut_ptr<'a>(v: *mut nv_sys::nvlist) -> &'a mut Self {
-        mem::transmute::<*mut nv_sys::nvlist, &mut Self>(v)
+        &mut *(v as *mut Self)
     }
 
+    /// # Safety
+    /// Does not check the pointer's validity, and returns a reference of any arbitrary lifetime.
     pub unsafe fn from_ptr<'a>(v: *const nv_sys::nvlist) -> &'a Self {
-        mem::transmute::<*const nv_sys::nvlist, &Self>(v)
+        &*(v as *const Self)
     }
 
     pub fn as_mut_ptr(&mut self) -> *mut nv_sys::nvlist {
-        unsafe { mem::transmute::<&mut NvListRef, *mut nv_sys::nvlist>(self) }
+        self as *mut Self as *mut nv_sys::nvlist
     }
 
     pub fn as_ptr(&self) -> *const nv_sys::nvlist {
-        unsafe { mem::transmute::<&NvListRef, *const nv_sys::nvlist>(self) }
+        self as *const Self as *mut nv_sys::nvlist
     }
 
     pub fn encoded_size(&self, encoding: NvEncoding) -> io::Result<usize> {
@@ -339,7 +342,7 @@ impl NvListRef {
             let r = unsafe {
                 ::std::slice::from_raw_parts(n, len as usize)
                     .iter()
-                    .map(|x| *x)
+                    .copied()
                     .collect()
             };
 

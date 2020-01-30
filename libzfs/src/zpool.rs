@@ -62,7 +62,7 @@ impl Zpool {
             let out = CString::from_raw(raw);
 
             if r != 0 {
-                Err(::std::io::Error::from_raw_os_error(r))?
+                Err(::std::io::Error::from_raw_os_error(r).into())
             } else {
                 Ok(out)
             }
